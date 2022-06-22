@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Home Page</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script>
+            function htmlToElement(html) {
+                var template = document.createElement('template');
+                html = html.trim(); // Never return a text node of whitespace as the result
+                template.innerHTML = html;
+                return template.content.firstChild;
+            }
+            
+            function addEvent(event) {
+                const newElement = htmlToElement(event);
+                const identificator = newElement.id;
+                const element = document.getElementById(identificator);
+                const eventList = document.getElementById('table');
+                
+                
+                if (element !== null) {
+                    //element.innerHTML = event.trim();
+                    element.cells[3].innerHTML = newElement.cells[3].innerHTML;
+                    return;
+                }
+                var length = eventList.rows.length;
+                eventList.appendChild(newElement);
+                eventList.rows[length].cells[0].innerHTML = length + 1;
+                
+                
+                //var copycel = document.getElementById('table').innerHTML;
+		//document.getElementById('table').innerHTML = copycel + event;
+            }
+            
+            
+
+            function initialize() {
+		const eventSource = new EventSource('/subscription');
+
+		eventSource.onmessage = e => {
+                    const msg = e.data;
+                    console.log(msg);
+                    Notification.requestPermission(function() {
+                            if (Notification.permission === 'granted') {
+                                    // user approved.
+                                    var text = msg;
+                                    var notification = new Notification('Notification Alert!', { body: text });
+                                    setTimeout(notification.close(), 5 * 1000) // close in 5 sec
+                            } else if (Notification.permission === 'denied') {
+                                    // user denied.
+                            } else { // Notification.permission === 'default'
+                                    // user didn’t make a decision.
+                                    // You can’t send notifications until they grant permission.
+                            }
+                    });
+
+                    document.getElementById("notify").innerHTML = msg;
+                    const json = JSON.parse(msg);
+                    addEvent(json.game, json.id);
+                     
+
+			
+		};
+		eventSource.onopen = e => console.log('open');
+		eventSource.onerror = e => {
+                    if (e.readyState === EventSource.CLOSED) {
+                        console.log('close');
+                    }
+                    else {
+                        console.log(e);
+                    }
+		};
+		eventSource.addEventListener('ping', function(e) {
+			console.log('second', e.data);
+		}, false);
+            }
+            window.onload = initialize;
+
+
+    </script>
+    </head>
+    <body>
+        <div hidden="true" id="notify" style="border:1px solid #000;width:500px;height:30px;margin:10px;"></div>
+        <div class="scores">
+
+    
+    <table border="1">
+        <thead>
+        <tr>
+            <th >No</th>
+            <th >Team1</th>
+            <th >Team2</th>
+            <th>Score</th>
+            
+        
+        </tr>
+        </thead>
+        <tbody id="table">
+        
+        <tr th:each="game,rowStat : ${games}" th:id="${game.id}">
+            <td th:text="${rowStat.count}">1</td>
+            <td><span th:text="${game.team1}"> Team1 </span></td>
+            <td><span th:text="${game.team2}"> Team2 </span></td>
+             <td><span th:text="${game.score}" > score </span></td>
+        </tr>
+        </tbody>
+        
+    </table>
+    
+    </div>
+    </body>
+</html>
+<html>
+
